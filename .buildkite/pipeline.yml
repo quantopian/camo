@@ -1,0 +1,43 @@
+steps:
+  # Build the camo container
+  - label: ":docker: docker build"
+    plugins:
+      - docker-compose#v2.6.0:
+          build:
+            - camo
+          image-repository: 997938224961.dkr.ecr.us-east-1.amazonaws.com/camo
+          # n.b. - only the first cache found is used
+          cache-from:
+            - camo:997938224961.dkr.ecr.us-east-1.amazonaws.com/camo:${BUILDKITE_BRANCH}
+            - camo:997938224961.dkr.ecr.us-east-1.amazonaws.com/camo:staging-deployed
+
+  - wait:
+
+  # Push image for caching.
+  - label: ":docker: docker push latest"
+    plugins:
+      - docker-compose#v3.0.0:
+          push:
+            - camo:997938224961.dkr.ecr.us-east-1.amazonaws.com/camo:latest
+            - camo:997938224961.dkr.ecr.us-east-1.amazonaws.com/camo:${BUILDKITE_BRANCH}
+
+  # Run camo tests.
+  - label: ":yarn: yarn"
+    command: yarn tests
+    timeout_in_minutes: 10
+    plugins:
+      docker-compose#v3.0.0:
+        run: camo
+        shell: false
+
+  - wait:
+
+  # Deploy staging container.
+  - label: ":docker: docker push staging-deployed"
+    plugins:
+      - docker-compose#v3.0.0:
+          push:
+            - camo:997938224961.dkr.ecr.us-east-1.amazonaws.com/camo:staging-deployed
+    branches: "master"
+    concurrency: 1
+    concurrency_group: "camo/ecr-push"
