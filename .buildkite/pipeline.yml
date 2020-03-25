@@ -21,14 +21,14 @@ steps:
             - camo:997938224961.dkr.ecr.us-east-1.amazonaws.com/camo:latest
             - camo:997938224961.dkr.ecr.us-east-1.amazonaws.com/camo:${BUILDKITE_BRANCH}
 
-  # Run camo tests.
-  - label: ":yarn: yarn"
-    command: yarn tests
-    timeout_in_minutes: 10
-    plugins:
-      docker-compose#v3.0.0:
-        run: camo
-        shell: false
+  # TODO: figure out whether we need to run any tests/how to run
+  # - label: ":yarn: yarn"
+  #   command: yarn tests
+  #   timeout_in_minutes: 10
+  #   plugins:
+  #     docker-compose#v3.0.0:
+  #       run: camo
+  #       shell: false
 
   - wait:
 
