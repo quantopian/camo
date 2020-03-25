@@ -1,0 +1,16 @@
+{{- $appName := include "deployment.name" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $appName }}
+  labels:
+    {{- include "application.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ include "deployment.name" . }}
+  ports:
+  - name: serviceport
+    port: {{ .Values.container_port }}
+    protocol: TCP
+    targetPort: {{ .Values.container_port }}

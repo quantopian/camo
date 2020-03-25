@@ -1,0 +1,20 @@
+{{- $appName := include "deployment.name" . -}}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ include "deployment.name" . }}-web-ingress
+  labels:
+    {{- include "application.labels" . | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+spec:
+  rules:
+    - host: {{ .Values.ingress.hostname | quote }}
+      http:
+        paths:
+          - path: "/"
+            backend:
+              serviceName: {{ $appName }}
+              servicePort: serviceport
