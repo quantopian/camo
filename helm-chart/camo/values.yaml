@@ -20,7 +20,8 @@ scaling:
   replicaMin: 2
   replicaMax: 4
 
-container_port: 3000
+# this is a Camo default
+container_port: 8081
 
 requests:
   cpu: "2"
