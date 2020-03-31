@@ -50,7 +50,7 @@ include:
 chartPath: helm-chart/camo
 
 # Set a unique Helm release name
-releaseName: ${local.username}-${project.name}
+releaseName: ${local.username}-${project.name}-camo
 
 # Specify which service deployed by the chart is the "primary" service
 serviceResource:
@@ -71,14 +71,14 @@ values:
     replicaMin: 1
     replicaMax: 1
 
-  nameOverride: ${local.username}-${project.name}
+  nameOverride: ${local.username}-${project.name}-camo
 
   image:
     repository: ${modules.camo-image.outputs.deployment-image-name}
     tag: ${modules.camo-image.version}
 
   ingress:
-    hostname: ${local.username}-${project.name}.stg.int.dynoquant.com
+    hostname: ${local.username}-${project.name}-camo.stg.int.dynoquant.com
 
   # Use the Garden version of qinit
   # https://github.com/quantopian/qbernetes/pull/66
@@ -92,14 +92,14 @@ values:
 
   # mount the secret created in "camo-credentials"
   secret:
-    secretName: ${local.username}-${project.name}-secret
+    secretName: ${local.username}-${project.name}-camo-secret
 
   # these are documented in the README.md
   envOverrides:
     # Anything below this point is loaded from the camo-credentials secret
     CAMO_KEY:
       secretKeyRef:
-        name: ${local.username}-${project.name}-secret
+        name: ${local.username}-${project.name}-camo-secret
         key: CAMO_KEY
 
 ---
@@ -122,7 +122,7 @@ manifests:
   - apiVersion: v1
     kind: Secret
     metadata:
-      name: ${local.username}-${project.name}-secret
+      name: ${local.username}-${project.name}-camo-secret
       # TODO: annotations/labels
     type: Opaque
     stringData:
