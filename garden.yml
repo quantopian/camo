@@ -127,4 +127,4 @@ manifests:
     type: Opaque
     stringData:
       # these are documented in the README.md
-      CAMO_KEY: ${var.CAMO_KEY || "f00b4r" }
+      CAMO_KEY: ${var.CAMO_KEY }
