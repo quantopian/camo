@@ -5,6 +5,7 @@ services:
     image: camo
     build:
       context: .
+      network: buildkite-default
     environment:
       - BUILDKITE_BUILD_NUMBER
       - BUILDKITE_PARALLEL_JOB

@@ -42,8 +42,7 @@ steps:
           repo_name: qbernetes
           repo_branch: master
           yaml_files:
-            - helm/helmfile/data-depot-db-service/values/pre-production.yaml
-            - helm/helmfile/data-depot-db-service/values/production.yaml
+            - helm/helmfile/qf-ssl-proxy/values/production.yaml
           chart_paths:
             - chartVersion
           version_paths:
@@ -70,7 +69,7 @@ steps:
           repo_name: qbernetes
           repo_branch: master
           yaml_files:
-            - helm/helmfile/data-depot-db-service/values/staging.yaml
+            - helm/helmfile/qf-ssl-proxy/values/staging.yaml
           version_paths:
             - metadata_service.image.tag
           chart_paths:
@@ -97,7 +96,7 @@ steps:
           argocd_server: argocd.stg.int.dynoquant.com
     branches: master
     concurrency: 1
-    concurrency_group: 'data-depot-db-service/deploy-staging/qbernetes'
+    concurrency_group: "${BUILDKITE_PIPELINE_SLUG}/deploy-staging/qbernetes"
 
   # Deploy to production.
   - label: ":argo: Deploy to qbernetes"
@@ -106,4 +105,4 @@ steps:
           argocd_server: argocd.prd.int.dynoquant.com
     branches: production-deployed
     concurrency: 1
-    concurrency_group: 'data-depot-db-service/deploy-production/qbernetes'
+    concurrency_group: "${BUILDKITE_PIPELINE_SLUG}/deploy-production/qbernetes"
