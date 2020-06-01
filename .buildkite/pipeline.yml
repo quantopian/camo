@@ -2,42 +2,108 @@ steps:
   # Build the camo container
   - label: ":docker: docker build"
     plugins:
-      - docker-compose#v2.6.0:
+      - docker-compose#v3.3.0:
           build:
             - camo
           image-repository: 997938224961.dkr.ecr.us-east-1.amazonaws.com/camo
           # n.b. - only the first cache found is used
           cache-from:
             - camo:997938224961.dkr.ecr.us-east-1.amazonaws.com/camo:${BUILDKITE_BRANCH}
-            - camo:997938224961.dkr.ecr.us-east-1.amazonaws.com/camo:staging-deployed
-
-  - wait:
-
-  # Push image for caching.
-  - label: ":docker: docker push latest"
-    plugins:
-      - docker-compose#v3.0.0:
+            - camo:997938224961.dkr.ecr.us-east-1.amazonaws.com/camo:latest
           push:
             - camo:997938224961.dkr.ecr.us-east-1.amazonaws.com/camo:latest
             - camo:997938224961.dkr.ecr.us-east-1.amazonaws.com/camo:${BUILDKITE_BRANCH}
+            - camo:997938224961.dkr.ecr.us-east-1.amazonaws.com/camo:${BUILDKITE_COMMIT}
 
-  # TODO: figure out whether we need to run any tests/how to run
-  # - label: ":yarn: yarn"
-  #   command: yarn tests
-  #   timeout_in_minutes: 10
-  #   plugins:
-  #     docker-compose#v3.0.0:
-  #       run: camo
-  #       shell: false
+  # TODO: upstream testing is all sorts of broken, maybe we should write our own / fix them?
 
   - wait:
 
-  # Deploy staging container.
-  - label: ":docker: docker push staging-deployed"
+  # Publish updated helm chart, if necessary
+  - label: ":helm: publish helm chart"
     plugins:
-      - docker-compose#v3.0.0:
-          push:
-            - camo:997938224961.dkr.ecr.us-east-1.amazonaws.com/camo:staging-deployed
-    branches: "master"
+      - ssh://git@github.com/quantopian/helm-chart-buildkite-plugin.git#v0.1.3:
+          chart_path: helm-chart/camo
+          metadata_key: chartversion
+    branches:
+      - master
+      - production-deployed
     concurrency: 1
-    concurrency_group: "camo/ecr-push"
+    concurrency_group: "helm-chart/${BUILDKITE_PIPELINE_SLUG}"
+
+  - wait:
+
+  - label: ":git: Bump chart and image version in qbernetes helmfile"
+    plugins:
+      - acloudguru/metadata-env:
+          keys:
+          - chartversion=BUILDKITE_CHART_VERSION
+      - ssh://git@github.com/quantopian/version-bumper-buildkite-plugin.git#v1.0.5:
+          repo_name: qbernetes
+          repo_branch: master
+          yaml_files:
+            - helm/helmfile/data-depot-db-service/values/pre-production.yaml
+            - helm/helmfile/data-depot-db-service/values/production.yaml
+          chart_paths:
+            - chartVersion
+          version_paths:
+            - metadata_service.image.tag
+          set_version: ${BUILDKITE_COMMIT}
+      - ssh://git@github.com/quantopian/git-commit-buildkite-plugin.git#v0.5.4:
+          add: helm/helmfile/*/values/*production.yaml
+          branch: version-bumper-${BUILDKITE_PIPELINE_SLUG}-$BUILDKITE_BUILD_NUMBER
+          create-branch: true
+          message: "Version Bump [$BUILDKITE_BUILD_NUMBER]"
+          pull-request: true
+          pull-request-labels: versionbump
+          pull-request-message: "Version Bump [$BUILDKITE_PIPELINE_SLUG build $BUILDKITE_BUILD_NUMBER]"
+    branches: production-deployed
+    concurrency: 1
+    concurrency_group: "version-bumper/qbernetes/${BUILDKITE_PIPELINE_SLUG}"
+
+  - label: ":git: Bump chart and image version in qbernetes helmfile"
+    plugins:
+      - acloudguru/metadata-env:
+          keys:
+          - chartversion=BUILDKITE_CHART_VERSION
+      - ssh://git@github.com/quantopian/version-bumper-buildkite-plugin.git#v1.0.5:
+          repo_name: qbernetes
+          repo_branch: master
+          yaml_files:
+            - helm/helmfile/data-depot-db-service/values/staging.yaml
+          version_paths:
+            - metadata_service.image.tag
+          chart_paths:
+            - chartVersion
+          set_version: ${BUILDKITE_COMMIT}
+      - ssh://git@github.com/quantopian/git-commit-buildkite-plugin.git#v0.5.4:
+          add: helm/helmfile/*/values/staging.yaml
+          branch: version-bumper-${BUILDKITE_PIPELINE_SLUG}-$BUILDKITE_BUILD_NUMBER
+          create-branch: true
+          message: "Version Bump [$BUILDKITE_BUILD_NUMBER]"
+          pull-request: true
+          pull-request-labels: versionbump
+          pull-request-message: "Version Bump [$BUILDKITE_PIPELINE_SLUG build $BUILDKITE_BUILD_NUMBER]"
+    branches: master
+    concurrency: 1
+    concurrency_group: "version-bumper/qbernetes/${BUILDKITE_PIPELINE_SLUG}"
+
+  - wait:
+
+  # Deploy camo to staging.
+  - label: ":argo: Deploy to qbernetes"
+    plugins:
+      - ssh://git@github.com/quantopian/argocd-buildkite-plugin.git:
+          argocd_server: argocd.stg.int.dynoquant.com
+    branches: master
+    concurrency: 1
+    concurrency_group: 'data-depot-db-service/deploy-staging/qbernetes'
+
+  # Deploy to production.
+  - label: ":argo: Deploy to qbernetes"
+    plugins:
+      - ssh://git@github.com/quantopian/argocd-buildkite-plugin.git:
+          argocd_server: argocd.prd.int.dynoquant.com
+    branches: production-deployed
+    concurrency: 1
+    concurrency_group: 'data-depot-db-service/deploy-production/qbernetes'

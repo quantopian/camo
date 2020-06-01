@@ -5,6 +5,8 @@ annotations: {}
 # a list of "name: k, value: v" dicts for env vars
 envOverrides: []
 
+serviceAccount: qfsslproxy
+
 global:
   environment: ''  # Overridden in helmfile
 
