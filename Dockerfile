@@ -1,5 +1,7 @@
 FROM ubuntu
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && apt-get install -yq nodejs npm
 
 RUN mkdir /app
