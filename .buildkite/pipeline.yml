@@ -94,6 +94,7 @@ steps:
     plugins:
       - ssh://git@github.com/quantopian/argocd-buildkite-plugin.git:
           argocd_server: argocd.stg.int.dynoquant.com
+          application: qf-ssl-proxy
     branches: master
     concurrency: 1
     concurrency_group: "${BUILDKITE_PIPELINE_SLUG}/deploy-staging/qbernetes"
@@ -103,6 +104,7 @@ steps:
     plugins:
       - ssh://git@github.com/quantopian/argocd-buildkite-plugin.git:
           argocd_server: argocd.prd.int.dynoquant.com
+          application: qf-ssl-proxy
     branches: production-deployed
     concurrency: 1
     concurrency_group: "${BUILDKITE_PIPELINE_SLUG}/deploy-production/qbernetes"
