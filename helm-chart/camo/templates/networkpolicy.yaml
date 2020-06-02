@@ -1,0 +1,21 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: "{{ include "deployment.name" . }}-from-nginx-only"
+  labels:
+    {{- include "application.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "deployment.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            network-layer: system
+        podSelector:
+          matchLabels:
+            app: nginx-ingress
+{{- end }}

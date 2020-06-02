@@ -1,0 +1,33 @@
+# Buildkite
+.buildkite/pipeline.yml
+
+# Docker
+.dockerignore
+Dockerfile
+# Docker compose
+docker-*.yml
+docker-compose-logs/
+*.env
+
+# Helm
+helm-chart
+
+# git
+.git
+.gitmodules
+.gitconfig
+.gitignore
+
+# Garden
+garden.yml
+.garden
+
+# js
+/node_modules
+
+# mac garbage
+.DS_Store
+
+# editors
+*.sublime-*
+.vscode

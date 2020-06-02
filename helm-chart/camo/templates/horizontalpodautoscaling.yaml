@@ -1,0 +1,20 @@
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "deployment.name" . }}
+  labels:
+    {{- include "application.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: {{ include "deployment.name" . }}
+  minReplicas: {{ .Values.scaling.replicaMin }}
+  maxReplicas: {{ .Values.scaling.replicaMax }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50

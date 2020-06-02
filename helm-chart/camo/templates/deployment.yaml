@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "deployment.name" . }}
+  labels:
+    {{- include "application.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "deployment.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "deployment.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        {{- toYaml .Values.annotations | nindent 8 }}
+    spec:
+      serviceAccountName: "{{ .Values.serviceAccount }}"
+      automountServiceAccountToken: true
+      {{- if .Values.secret }}
+      volumes:
+        - name: secret-data
+          secret:
+            secretName: {{ .Values.secret.secretName }}
+      {{- end }}
+      # TODO: add liveness and readiness checks here
+      containers:
+        - name: "camo"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          env:
+            - name: GARDEN_VERSION
+              value: "1.x"
+            - name: AWS_METADATA_SERVICE_TIMEOUT
+              value: "5"
+            - name: AWS_METADATA_SERVICE_NUM_ATTEMPTS
+              value: "20"
+          # Allow env var overrides
+        {{- range $key, $value := .Values.envOverrides }}
+          {{- if kindIs "map" $value }}
+            - name: {{ $key | toString | quote }}
+              valueFrom:
+                {{- $value | toYaml | nindent 16 }}
+          {{- else }}
+            - name: {{ $key | toString | quote }}
+              value: {{ $value | toString | quote }}
+          {{- end}}
+        {{- end}}
+          # has an entrypoint
+          {{- if .Values.image.command }}
+          command:
+            {{- range .Values.image.command }}
+            - "{{ . }}"
+            {{- end }}
+          {{- end }}
+          # provides args to entrypoint
+          {{- if .Values.image.args }}
+          args:
+            {{- range .Values.image.args }}
+            - "{{ . }}"
+            {{- end }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: web
+              containerPort: {{ .Values.container_port }}
+              protocol: TCP
+          resources:
+            requests:
+              cpu: {{ .Values.requests.cpu }}
+              memory: {{ .Values.requests.memory }}
+            limits:
+              cpu: {{ .Values.limits.cpu }}
+              memory: {{ .Values.limits.memory }}
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: web
+              scheme: HTTP
+              httpHeaders:
+                - name: User-Agent
+                  value: kubelet
+            timeoutSeconds: 10
+            failureThreshold: 10
+            initialDelaySeconds: 20
+            periodSeconds: 5
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: web
+              scheme: HTTP
+              httpHeaders:
+                - name: User-Agent
+                  value: kubelet
+            initialDelaySeconds: 20
+            periodSeconds: 5
+          {{- end }}

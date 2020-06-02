@@ -1,0 +1,130 @@
+name: camo
+kind: Project
+
+# Global variables accessible to Garden templating
+variables:
+  # Export the USERNAME env var if you need to override your username.
+  username: ${local.username}
+  # TODO: this would be better, but for some reason, isn't available
+  # prefix: ${local.username}-${project.name}
+  prefix: ${local.username}-camo
+
+defaultEnvironment: staging
+
+environments:
+  - name: staging
+    variables:
+      tld: stg.int.dynoquant.com
+    providers:
+      - name: kubernetes
+        # uncomment to run as admin
+        # context: stg-admin@staging
+        context: dev@staging
+        namespace: staging
+        buildMode: cluster-docker
+
+---
+
+name: camo-image
+description: The Docker image build for camo.
+kind: Module
+type: container
+
+---
+
+name: camo-chart
+description: The Helm chart for camo.
+kind: Module
+type: helm
+
+# Helm provisioning should complete within a minute
+timeout: 60
+
+build:
+  dependencies:
+    - camo-image
+    - camo-credentials
+
+include:
+  - helm-chart/camo/**
+chartPath: helm-chart/camo
+
+# Set a unique Helm release name
+releaseName: ${local.username}-${project.name}-camo
+
+# Specify which service deployed by the chart is the "primary" service
+serviceResource:
+  kind: Deployment
+  name: ${local.username}-${project.name}-camo
+  containerModule: camo-image # adds support for hot reloading
+
+# Override chart values.yaml. Everything in this section is Garden-specific and should generally not be touched.
+values:
+  # These values should stay static, for Garden purposes.
+  global:
+    environment: development
+
+  garden:
+    enabled: true
+
+  scaling:
+    replicaMin: 1
+    replicaMax: 1
+
+  nameOverride: ${local.username}-${project.name}-camo
+
+  image:
+    repository: ${modules.camo-image.outputs.deployment-image-name}
+    tag: ${modules.camo-image.version}
+
+  ingress:
+    hostname: ${local.username}-${project.name}-camo.stg.int.dynoquant.com
+
+  # Use the Garden version of qinit
+  # https://github.com/quantopian/qbernetes/pull/66
+  # This is a temporary fork that will be backported/unified in at some point
+  qinit:
+    image:
+      repository: 997938224961.dkr.ecr.us-east-1.amazonaws.com/garden-qinit
+      tag: v1.0.4
+
+  vault: False
+
+  # mount the secret created in "camo-credentials"
+  secret:
+    secretName: ${local.username}-${project.name}-camo-secret
+
+  # these are documented in the README.md
+  envOverrides:
+    # Anything below this point is loaded from the camo-credentials secret
+    CAMO_KEY:
+      secretKeyRef:
+        name: ${local.username}-${project.name}-camo-secret
+        key: CAMO_KEY
+
+---
+
+name: camo-credentials
+description: >
+  A Kubernetes Secret with development credentials for camo. Values
+  specified here must be provided in "garden.staging.env" using
+  Envfile syntax. They will be made available in the cluster as a
+  Kubernetes secret, and read into the Pod as env vars.
+kind: Module
+type: kubernetes
+
+# TODO: Exclude all files here to prevent syncing
+
+# Example "garden.staging.env" file:
+# CAMO_KEY=xxxx
+
+manifests:
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: ${local.username}-${project.name}-camo-secret
+      # TODO: annotations/labels
+    type: Opaque
+    stringData:
+      # these are documented in the README.md
+      CAMO_KEY: ${var.CAMO_KEY }

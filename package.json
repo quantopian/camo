@@ -2,6 +2,7 @@
   "name": "camo",
   "version": "2.3.0",
   "dependencies": {
+    "coffeescript": "^2.5.1"
   },
   "engines": {
     "node": "8.1.4"

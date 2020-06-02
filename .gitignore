@@ -7,3 +7,8 @@ tmp/camo.pid
 .idea/misc.xml
 .idea/modules.xml
 .idea/workspace.xml
+
+# Garden
+.garden
+# ignore all logfiles
+*.log

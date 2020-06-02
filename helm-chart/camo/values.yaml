@@ -1,0 +1,50 @@
+nameOverride: camo
+
+annotations: {}
+
+# a list of "name: k, value: v" dicts for env vars
+envOverrides: []
+
+serviceAccount: qfsslproxy
+
+global:
+  environment: ''  # Overridden in helmfile
+
+role_arn: ''
+
+image:
+  repository: 997938224961.dkr.ecr.us-east-1.amazonaws.com/camo
+  tag: ''  # Overridden in helmfile
+  pullPolicy: Always
+  args: ["node", "server.js"]
+
+scaling:
+  replicaMin: 2
+  replicaMax: 4
+
+# this is a Camo default
+container_port: 8081
+
+requests:
+  cpu: "2"
+  memory: "2Gi"
+
+limits:
+  cpu: "2"
+  memory: "3Gi"
+
+ingress:
+  hostname: ''
+  authSecret: ''
+
+garden:
+  enabled: False
+
+networkPolicy:
+  enabled: true
+
+livenessProbe:
+  enabled: false
+
+readinessProbe:
+  enabled: false
