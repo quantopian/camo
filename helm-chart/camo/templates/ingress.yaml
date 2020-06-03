@@ -12,10 +12,12 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
 spec:
   rules:
-    - host: {{ .Values.ingress.hostname | quote }}
+    {{- range .Values.ingress.hostnames }}
+    - host: {{ . | quote }}
       http:
         paths:
           - path: "/"
             backend:
               serviceName: {{ $appName }}
               servicePort: serviceport
+    {{- end }}

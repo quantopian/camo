@@ -34,7 +34,7 @@ limits:
   memory: "3Gi"
 
 ingress:
-  hostname: ''
+  hostnames: []
   authSecret: ''
 
 garden:
