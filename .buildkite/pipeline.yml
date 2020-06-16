@@ -95,7 +95,7 @@ steps:
       - ssh://git@github.com/quantopian/argocd-buildkite-plugin.git#v1.2.0:
           argocd_server: argocd.stg.int.dynoquant.com
           project: staging-public
-          application: qf-ssl-proxy
+          application: qf-ssl-proxy-public
     branches: master
     concurrency: 1
     concurrency_group: "${BUILDKITE_PIPELINE_SLUG}/deploy-staging/qbernetes"
@@ -107,6 +107,7 @@ steps:
           argocd_server: argocd.prd.int.dynoquant.com
           # TODO: when EKS Public Prod is ready
           #project: production-public
+          #application: qf-ssl-proxy-public
           application: qf-ssl-proxy
     branches: production-deployed
     concurrency: 1
