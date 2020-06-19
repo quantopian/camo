@@ -34,6 +34,7 @@ limits:
   memory: "1Gi"
 
 ingress:
+  class: 'nginx-internal'
   hostnames: []
   authSecret: ''
 
