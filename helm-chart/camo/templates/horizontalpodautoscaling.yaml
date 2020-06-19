@@ -6,7 +6,7 @@ metadata:
     {{- include "application.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
-    apiVersion: extensions/v1beta1
+    apiVersion: apps/v1
     kind: Deployment
     name: {{ include "deployment.name" . }}
   minReplicas: {{ .Values.scaling.replicaMin }}
